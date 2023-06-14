@@ -170,7 +170,9 @@ func (api ObjectAPIHandlers) ListBucketsHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	listBuckets := objectAPI.ListBuckets
+	vars := mux.Vars(r)
+	bucket := vars["bucket"]
+	listObjects := objectAPI.ListObjects
 
 	cred, owner, s3Error := CheckRequestAuthTypeCredential(ctx, r, policy.ListAllMyBucketsAction, "", "")
 	if s3Error != ErrNone && s3Error != ErrAccessDenied {
@@ -179,10 +181,17 @@ func (api ObjectAPIHandlers) ListBucketsHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Invoke the list buckets.
-	bucketsInfo, err := listBuckets(ctx)
+	objectsInfo, err := listObjects(ctx, bucket, "", "", SlashSeparator, maxObjectList)
 	if err != nil {
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
+	}
+	bucketsInfo := make([]BucketInfo, 0)
+	for _, v := range objectsInfo.Objects {
+		bucketsInfo = append(bucketsInfo, BucketInfo{
+			Name:    v.Name,
+			Created: v.ModTime,
+		})
 	}
 
 	if s3Error == ErrAccessDenied {
