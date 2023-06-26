@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,10 @@ import (
 	"storj.io/minio/cmd/logger"
 	"storj.io/minio/pkg/bucket/policy"
 	"storj.io/minio/pkg/sync/errgroup"
+)
+
+const (
+	Sep = "/"
 )
 
 func concurrentDecryptETag(ctx context.Context, objects []ObjectInfo) {
@@ -229,6 +234,8 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 	}
 	if prefix == "" {
 		prefix = vars["object"]
+	} else {
+		prefix = path.Join(vars["object"], prefix)
 	}
 
 	// Validate the query params before beginning to serve the request.
@@ -247,6 +254,21 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 	if err != nil {
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
+	}
+
+	for i := len(listObjectsV2Info.Objects) - 1; i >= 0; i-- {
+		v := listObjectsV2Info.Objects[i]
+		v.Name = strings.TrimPrefix(v.Name, prefix)
+		v.Name = strings.TrimPrefix(v.Name, Sep)
+		if v.Name == "" || v.Name == Sep {
+			listObjectsV2Info.Objects = append(listObjectsV2Info.Objects[:i], listObjectsV2Info.Objects[i+1:]...)
+		} else {
+			listObjectsV2Info.Objects[i] = v
+		}
+	}
+	for k, v := range listObjectsV2Info.Objects {
+		v.Name = strings.TrimPrefix(v.Name, prefix+Sep)
+		listObjectsV2Info.Objects[k] = v
 	}
 
 	concurrentDecryptETag(ctx, listObjectsV2Info.Objects)
@@ -329,6 +351,8 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	}
 	if prefix == "" {
 		prefix = vars["object"]
+	} else {
+		prefix = path.Join(vars["object"], prefix)
 	}
 
 	// Validate all the query params before beginning to serve the request.
@@ -346,6 +370,16 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	if err != nil {
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
+	}
+	for i := len(listObjectsInfo.Objects) - 1; i >= 0; i-- {
+		v := listObjectsInfo.Objects[i]
+		v.Name = strings.TrimPrefix(v.Name, prefix)
+		v.Name = strings.TrimPrefix(v.Name, Sep)
+		if v.Name == "" || v.Name == Sep {
+			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
+		} else {
+			listObjectsInfo.Objects[i] = v
+		}
 	}
 
 	concurrentDecryptETag(ctx, listObjectsInfo.Objects)

@@ -38,7 +38,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/minio/minio-go/v7/pkg/tags"
 	"github.com/minio/sio"
-
 	"storj.io/minio/cmd/config/storageclass"
 	"storj.io/minio/cmd/crypto"
 	xhttp "storj.io/minio/cmd/http"

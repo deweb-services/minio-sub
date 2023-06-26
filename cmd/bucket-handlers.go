@@ -34,7 +34,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/minio/minio-go/v7/pkg/tags"
-
 	"storj.io/minio/cmd/crypto"
 	xhttp "storj.io/minio/cmd/http"
 	"storj.io/minio/cmd/logger"
