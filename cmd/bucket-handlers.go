@@ -278,9 +278,13 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		return
 	}
 
+	logger.Info(fmt.Sprintf("delete objects len: %d, new name: %#+v", len(deleteObjects.Objects), deleteObjects.Objects))
+
 	// Convert object name delete objects if it has `/` in the beginning.
 	for i := range deleteObjects.Objects {
-		deleteObjects.Objects[i].ObjectName = path.Join(prefix, trimLeadingSlash(deleteObjects.Objects[i].ObjectName))
+		newName := path.Join(prefix, trimLeadingSlash(deleteObjects.Objects[i].ObjectName))
+		logger.Info(fmt.Sprintf("old name: %s, new name: %s", deleteObjects.Objects[i].ObjectName, newName))
+		deleteObjects.Objects[i].ObjectName = newName
 	}
 
 	// Call checkRequestAuthType to populate ReqInfo.AccessKey before GetBucketInfo()
