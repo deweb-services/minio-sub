@@ -520,7 +520,7 @@ func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingTy
 		content.Owner = owner
 		contents = append(contents, content)
 	}
-	data.Name = bucket
+	data.Name = prefix
 	data.Contents = contents
 
 	data.EncodingType = encodingType
@@ -584,7 +584,7 @@ func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter,
 		}
 		contents = append(contents, content)
 	}
-	data.Name = bucket
+	data.Name = prefix
 	data.Contents = contents
 
 	data.EncodingType = encodingType
