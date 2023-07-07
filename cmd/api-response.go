@@ -520,11 +520,12 @@ func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingTy
 		content.Owner = owner
 		contents = append(contents, content)
 	}
-	data.Name = prefix
+	b, p := splitPrefix(prefix)
+	data.Name = b
 	data.Contents = contents
 
 	data.EncodingType = encodingType
-	data.Prefix = s3EncodeName(prefix, encodingType)
+	data.Prefix = s3EncodeName(p, encodingType)
 	data.Marker = s3EncodeName(marker, encodingType)
 	data.Delimiter = s3EncodeName(delimiter, encodingType)
 	data.MaxKeys = maxKeys
@@ -584,13 +585,14 @@ func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter,
 		}
 		contents = append(contents, content)
 	}
-	data.Name = prefix
+	b, p := splitPrefix(prefix)
+	data.Name = b
 	data.Contents = contents
 
 	data.EncodingType = encodingType
 	data.StartAfter = s3EncodeName(startAfter, encodingType)
 	data.Delimiter = s3EncodeName(delimiter, encodingType)
-	data.Prefix = s3EncodeName(prefix, encodingType)
+	data.Prefix = s3EncodeName(p, encodingType)
 	data.MaxKeys = maxKeys
 	data.ContinuationToken = base64.StdEncoding.EncodeToString([]byte(token))
 	data.NextContinuationToken = base64.StdEncoding.EncodeToString([]byte(nextToken))
@@ -837,4 +839,14 @@ func writeCustomErrorResponseJSON(ctx context.Context, w http.ResponseWriter, er
 	}
 	encodedErrorResponse := encodeResponseJSON(errorResponse)
 	writeResponse(w, err.HTTPStatusCode, encodedErrorResponse, mimeJSON)
+}
+
+func splitPrefix(in string) (string, string) {
+	strs := strings.Split(in, Sep)
+	if len(strs) == 1 {
+		return in, ""
+	}
+	bucket := strs[0]
+	prefix := strings.TrimPrefix(in, bucket+Sep)
+	return bucket, prefix
 }
