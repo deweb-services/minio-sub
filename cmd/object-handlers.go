@@ -3041,38 +3041,31 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	}
 
 	// check contents
-	logger.Info(fmt.Sprintf("isDir check for bucket: %v", goi.IsDir))
 	prefix, marker, delimiter, maxKeys, _, s3Error := getListObjectsV1Args(r.URL.Query())
 	if s3Error != ErrNone {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL, guessIsBrowserReq(r))
 		return
 	}
-	logger.Info(fmt.Sprintf("prefix from getListObjectV1Args: %v", prefix))
 	if prefix == "" {
 		prefix = vars["object"]
 	} else {
 		prefix = path.Join(vars["object"], prefix)
 	}
-	logger.Info(fmt.Sprintf("prefix from after ajustment: %v", prefix))
 
 	listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
 	if err != nil {
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
-	logger.Info(fmt.Sprintf("listObjectInfo length: %v", len(listObjectsInfo.Objects)))
 
 	objectsInside := 0
-	for i, v := range listObjectsInfo.Objects {
-		logger.Info(fmt.Sprintf("object #%d, name: %s, object: %#+v", i, v.Name, v))
-
+	for _, v := range listObjectsInfo.Objects {
 		v.Name = strings.TrimPrefix(v.Name, prefix)
 		v.Name = strings.TrimPrefix(v.Name, Sep)
 		if !(v.Name == "" || v.Name == Sep) {
 			objectsInside++
 		}
 	}
-	logger.Info(fmt.Sprintf("number of objects inside bucket: %v", objectsInside))
 
 	if objectsInside > 0 {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
