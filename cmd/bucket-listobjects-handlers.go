@@ -261,7 +261,8 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		v := listObjectsV2Info.Objects[i]
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
-		if !strings.HasPrefix(v.Name, path.Join(prefix, Sep)) || name == "" || name == Sep {
+		prePath := path.Join(prefix, Sep) + Sep
+		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsV2Info.Objects = append(listObjectsV2Info.Objects[:i], listObjectsV2Info.Objects[i+1:]...)
 		} else {
 			listObjectsV2Info.Objects[i].Name = name
@@ -382,7 +383,8 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
-		if !strings.HasPrefix(v.Name, path.Join(prefix, Sep)) || name == "" || name == Sep {
+		prePath := path.Join(prefix, Sep) + Sep
+		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {
 			listObjectsInfo.Objects[i].Name = name

@@ -304,6 +304,13 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	}
 	logger.Info(fmt.Sprintf("delete objects point: %d", 1))
 
+	for index, object := range deleteObjects.Objects {
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 1))
+		newName := path.Join(prefix, object.ObjectName)
+		logger.Info(fmt.Sprintf("old name: %s, new name: %s, index: %d", object.ObjectName, newName, index))
+		object.ObjectName = newName
+	}
+
 	var objectsToDelete = map[ObjectToDelete]int{}
 	getObjectInfoFn := objectAPI.GetObjectInfo
 	if api.CacheAPI() != nil {
@@ -329,7 +336,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	for index, object := range deleteObjects.Objects {
 		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 0))
 
-		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, ""); apiErrCode != ErrNone {
+		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object.ObjectName); apiErrCode != ErrNone {
 			logger.Info(fmt.Sprintf("delete objects api err code: %d: %v, %#+v", index, apiErrCode, errorCodes.ToAPIErr(apiErrCode)))
 
 			if apiErrCode == ErrSignatureDoesNotMatch || apiErrCode == ErrInvalidAccessKeyID {
@@ -345,10 +352,6 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 			}
 			continue
 		}
-		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 1))
-		newName := path.Join(prefix, trimLeadingSlash(object.ObjectName))
-		logger.Info(fmt.Sprintf("old name: %s, new name: %s, index: %d", object.ObjectName, newName, index))
-		object.ObjectName = newName
 
 		if object.VersionID != "" && object.VersionID != nullVersionID {
 			logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 2))
