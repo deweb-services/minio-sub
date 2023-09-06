@@ -287,9 +287,12 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		deleteObjects.Objects[i].ObjectName = newName
 	}
 
+	logger.Info(fmt.Sprintf("delete objects len: %d, new name: %#+v", len(deleteObjects.Objects), deleteObjects.Objects))
+
 	// Call checkRequestAuthType to populate ReqInfo.AccessKey before GetBucketInfo()
 	// Ignore errors here to preserve the S3 error behavior of GetBucketInfo()
 	checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, "")
+	logger.Info(fmt.Sprintf("delete objects point: %d", -2))
 
 	// Before proceeding validate if bucket exists.
 	_, err := objectAPI.GetBucketInfo(ctx, bucket)
@@ -297,17 +300,20 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", -1))
 
 	deleteObjectsFn := objectAPI.DeleteObjects
 	if api.CacheAPI() != nil {
 		deleteObjectsFn = api.CacheAPI().DeleteObjects
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", 0))
 
 	// Return Malformed XML as S3 spec if the list of objects is empty
 	if len(deleteObjects.Objects) == 0 {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrMalformedXML), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", 1))
 
 	var objectsToDelete = map[ObjectToDelete]int{}
 	getObjectInfoFn := objectAPI.GetObjectInfo
@@ -323,11 +329,17 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	if rcfg, _ := globalBucketObjectLockSys.Get(bucket); rcfg.LockEnabled {
 		hasLockEnabled = true
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", 2))
+
 	if _, err := globalBucketMetadataSys.GetLifecycleConfig(bucket); err == nil {
 		hasLifecycleConfig = true
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", 3))
+
 	dErrs := make([]DeleteError, len(deleteObjects.Objects))
 	for index, object := range deleteObjects.Objects {
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 0))
+
 		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object.ObjectName); apiErrCode != ErrNone {
 			if apiErrCode == ErrSignatureDoesNotMatch || apiErrCode == ErrInvalidAccessKeyID {
 				WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(apiErrCode), r.URL, guessIsBrowserReq(r))
@@ -342,7 +354,11 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 			}
 			continue
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 1))
+
 		if object.VersionID != "" && object.VersionID != nullVersionID {
+			logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 2))
+
 			if _, err := uuid.Parse(object.VersionID); err != nil {
 				logger.LogIf(ctx, fmt.Errorf("invalid version-id specified %w", err))
 				apiErr := errorCodes.ToAPIErr(ErrNoSuchVersion)
@@ -355,22 +371,29 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 				continue
 			}
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 3))
 
 		if replicateDeletes || hasLockEnabled || hasLifecycleConfig {
 			goi, gerr = getObjectInfoFn(ctx, bucket, object.ObjectName, ObjectOptions{
 				VersionID: object.VersionID,
 			})
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 4))
+
 		if hasLifecycleConfig && gerr == nil {
 			object.PurgeTransitioned = goi.TransitionStatus
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 5))
+
 		if replicateDeletes {
 			replicate, repsync := checkReplicateDelete(ctx, bucket, ObjectToDelete{
 				ObjectName: object.ObjectName,
 				VersionID:  object.VersionID,
 			}, goi, gerr)
 			replicateSync = repsync
+			logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 6))
 			if replicate {
+				logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 7))
 				if apiErrCode := checkRequestAuthType(ctx, r, policy.ReplicateDeleteAction, bucket, object.ObjectName); apiErrCode != ErrNone {
 					if apiErrCode == ErrSignatureDoesNotMatch || apiErrCode == ErrInvalidAccessKeyID {
 						WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(apiErrCode), r.URL, guessIsBrowserReq(r))
@@ -378,6 +401,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 					}
 					continue
 				}
+				logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 8))
 				if object.VersionID != "" {
 					object.VersionPurgeStatus = Pending
 				} else {
@@ -385,8 +409,13 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 				}
 			}
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 9))
 		if object.VersionID != "" {
+			logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 10))
+
 			if hasLockEnabled {
+				logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 11))
+
 				if apiErrCode := enforceRetentionBypassForDelete(ctx, r, bucket, object, goi, gerr); apiErrCode != ErrNone {
 					apiErr := errorCodes.ToAPIErr(apiErrCode)
 					dErrs[index] = DeleteError{
@@ -399,12 +428,14 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 				}
 			}
 		}
+		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 12))
 
 		// Avoid duplicate objects, we use map to filter them out.
 		if _, ok := objectsToDelete[object]; !ok {
 			objectsToDelete[object] = index
 		}
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d", 4))
 
 	toNames := func(input map[ObjectToDelete]int) (output []ObjectToDelete) {
 		output = make([]ObjectToDelete, len(input))
@@ -416,12 +447,15 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		return
 	}
 
+	logger.Info(fmt.Sprintf("delete objects point: %d", 5))
 	deleteList := toNames(objectsToDelete)
 	dObjects, errs := deleteObjectsFn(ctx, bucket, deleteList, ObjectOptions{
 		Versioned:        globalBucketVersioningSys.Enabled(bucket),
 		VersionSuspended: globalBucketVersioningSys.Suspended(bucket),
 	})
+	logger.Info(fmt.Sprintf("delete objects point: %d", 6))
 	deletedObjects := make([]DeletedObject, len(deleteObjects.Objects))
+	logger.Info(fmt.Sprintf("delete objects point: %d", 7))
 	for i := range errs {
 		// DeleteMarkerVersionID is not used specifically to avoid
 		// lookup errors, since DeleteMarkerVersionID is only
@@ -452,6 +486,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		}
 	}
 
+	logger.Info(fmt.Sprintf("delete objects point: %d", 8))
 	var deleteErrors []DeleteError
 	for _, dErr := range dErrs {
 		if dErr.Code != "" {
@@ -459,12 +494,14 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		}
 	}
 
+	logger.Info(fmt.Sprintf("delete objects point: %d", 9))
 	// Generate response
 	response := generateMultiDeleteResponse(deleteObjects.Quiet, deletedObjects, deleteErrors)
 	encodedSuccessResponse := EncodeResponse(response)
 
 	// Write success response.
 	WriteSuccessResponseXML(w, encodedSuccessResponse)
+	logger.Info(fmt.Sprintf("delete objects point: %d", 10))
 	for _, dobj := range deletedObjects {
 		if dobj.ObjectName == "" {
 			continue
@@ -510,6 +547,8 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 			Host:         handlers.GetSourceIP(r),
 		})
 	}
+	logger.Info(fmt.Sprintf("delete objects point: %d, end", 11))
+
 }
 
 // PutBucketHandler - PUT Bucket

@@ -3051,25 +3051,33 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	} else {
 		prefix = path.Join(vars["object"], prefix)
 	}
+	logger.Info(fmt.Sprintf("object prefix is: %s", prefix))
 
-	listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
-	if err != nil {
-		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
-	objectsInside := 0
-	for _, v := range listObjectsInfo.Objects {
-		v.Name = strings.TrimPrefix(v.Name, prefix)
-		v.Name = strings.TrimPrefix(v.Name, Sep)
-		if !(v.Name == "" || v.Name == Sep) {
-			objectsInside++
+	// means it is a "bucket"
+	if len(strings.Split(prefix, Sep)) < 2 {
+		listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+		if err != nil {
+			WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+			return
 		}
-	}
 
-	if objectsInside > 0 {
-		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
-		return
+		objectsInside := 0
+		for _, v := range listObjectsInfo.Objects {
+			logger.Info(fmt.Sprintf("object info before changing: %#+v", v))
+			name := strings.TrimPrefix(v.Name, prefix)
+			name = strings.TrimPrefix(name, Sep)
+			logger.Info(fmt.Sprintf("object name after changing: %v", v))
+
+			if !(name == "" || name == Sep) {
+				objectsInside++
+			}
+		}
+		logger.Info(fmt.Sprintf("objects inside folder: %d", objectsInside))
+
+		if objectsInside > 0 {
+			WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
+			return
+		}
 	}
 
 	replicateDel, replicateSync := checkReplicateDelete(ctx, bucket, ObjectToDelete{ObjectName: object, VersionID: opts.VersionID}, goi, gerr)
