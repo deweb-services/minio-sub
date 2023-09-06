@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -371,8 +372,12 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	logger.Info(fmt.Sprintf("listObjectsInfo len: %d", len(listObjectsInfo.Objects)))
+
 	for i := len(listObjectsInfo.Objects) - 1; i >= 0; i-- {
 		v := listObjectsInfo.Objects[i]
+		logger.Info(fmt.Sprintf("listObjectsInfo index: %d, object: %#+v", i, v))
+
 		v.Name = strings.TrimPrefix(v.Name, prefix)
 		v.Name = strings.TrimPrefix(v.Name, Sep)
 		if v.Name == "" || v.Name == Sep {

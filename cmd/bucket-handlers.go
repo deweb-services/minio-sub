@@ -278,17 +278,6 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		return
 	}
 
-	logger.Info(fmt.Sprintf("delete objects len: %d, new name: %#+v", len(deleteObjects.Objects), deleteObjects.Objects))
-
-	// Convert object name delete objects if it has `/` in the beginning.
-	for i := range deleteObjects.Objects {
-		newName := path.Join(prefix, trimLeadingSlash(deleteObjects.Objects[i].ObjectName))
-		logger.Info(fmt.Sprintf("old name: %s, new name: %s", deleteObjects.Objects[i].ObjectName, newName))
-		deleteObjects.Objects[i].ObjectName = newName
-	}
-
-	logger.Info(fmt.Sprintf("delete objects len: %d, new name: %#+v", len(deleteObjects.Objects), deleteObjects.Objects))
-
 	// Call checkRequestAuthType to populate ReqInfo.AccessKey before GetBucketInfo()
 	// Ignore errors here to preserve the S3 error behavior of GetBucketInfo()
 	checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, "")
@@ -355,6 +344,9 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 			continue
 		}
 		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 1))
+		newName := path.Join(prefix, trimLeadingSlash(object.ObjectName))
+		logger.Info(fmt.Sprintf("old name: %s, new name: %s, index: %d", object.ObjectName, newName, index))
+		object.ObjectName = newName
 
 		if object.VersionID != "" && object.VersionID != nullVersionID {
 			logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 2))

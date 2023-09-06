@@ -3060,13 +3060,14 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 			WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 			return
 		}
+		logger.Info(fmt.Sprintf("object info len: %d", len(listObjectsInfo.Objects)))
 
 		objectsInside := 0
 		for _, v := range listObjectsInfo.Objects {
 			logger.Info(fmt.Sprintf("object info before changing: %#+v", v))
 			name := strings.TrimPrefix(v.Name, prefix)
 			name = strings.TrimPrefix(name, Sep)
-			logger.Info(fmt.Sprintf("object name after changing: %v", v))
+			logger.Info(fmt.Sprintf("object name after changing: %v", name))
 
 			if !(name == "" || name == Sep) {
 				objectsInside++
