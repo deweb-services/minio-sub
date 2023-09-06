@@ -343,14 +343,16 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 				WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(apiErrCode), r.URL, guessIsBrowserReq(r))
 				return
 			}
-			apiErr := errorCodes.ToAPIErr(apiErrCode)
-			dErrs[index] = DeleteError{
-				Code:      apiErr.Code,
-				Message:   apiErr.Description,
-				Key:       object.ObjectName,
-				VersionID: object.VersionID,
+			if apiErrCode != ErrInternalError {
+				apiErr := errorCodes.ToAPIErr(apiErrCode)
+				dErrs[index] = DeleteError{
+					Code:      apiErr.Code,
+					Message:   apiErr.Description,
+					Key:       object.ObjectName,
+					VersionID: object.VersionID,
+				}
+				continue
 			}
-			continue
 		}
 
 		if object.VersionID != "" && object.VersionID != nullVersionID {

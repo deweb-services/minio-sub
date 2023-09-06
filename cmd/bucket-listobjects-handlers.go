@@ -384,6 +384,8 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
 		prePath := path.Join(prefix, Sep) + Sep
+		logger.Info(fmt.Sprintf("listObjectsInfo stuff, index %d, name: %s, PrePath: %s, prefix: %s", i, name, prePath, prefix))
+
 		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {
