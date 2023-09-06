@@ -3000,6 +3000,7 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	isBucket := vars["is_bucket"] == "true"
 
 	objectAPI := api.ObjectAPI()
 	if objectAPI == nil {
@@ -3051,14 +3052,14 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	} else {
 		prefix = path.Join(vars["object"], prefix)
 	}
-	logger.Info(fmt.Sprintf("object prefix is: %s", prefix))
-	logger.Info(fmt.Sprintf("object api stats are: %v, %v, %v, %v, %v", bucket, prefix, marker, delimiter, maxKeys))
 
 	// means it is a "bucket"
-	if len(strings.Split(prefix, Sep)) < 2 {
+	if isBucket {
+		logger.Info(fmt.Sprintf("object prefix is: %s", prefix))
 		marker = prefix
-		listObjects := objectAPI.ListObjects
-		listObjectsInfo, err := listObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+
+		logger.Info(fmt.Sprintf("object api stats are: %v, %v, %v, %v, %v", bucket, prefix, marker, delimiter, maxKeys))
+		listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
 		if err != nil {
 			WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 			return
