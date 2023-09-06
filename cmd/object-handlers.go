@@ -3056,7 +3056,9 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 
 	// means it is a "bucket"
 	if len(strings.Split(prefix, Sep)) < 2 {
-		listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+		marker = prefix
+		listObjects := objectAPI.ListObjects
+		listObjectsInfo, err := listObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
 		if err != nil {
 			WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 			return

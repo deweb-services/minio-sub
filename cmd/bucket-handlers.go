@@ -329,7 +329,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	for index, object := range deleteObjects.Objects {
 		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 0))
 
-		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object.ObjectName); apiErrCode != ErrNone {
+		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, ""); apiErrCode != ErrNone {
 			logger.Info(fmt.Sprintf("delete objects api err code: %d: %v, %#+v", index, apiErrCode, errorCodes.ToAPIErr(apiErrCode)))
 
 			if apiErrCode == ErrSignatureDoesNotMatch || apiErrCode == ErrInvalidAccessKeyID {
