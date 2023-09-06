@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -364,28 +363,20 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	}
 
 	listObjects := objectAPI.ListObjects
-
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be
 	// marshaled into S3 compatible XML header.
-	logger.Info(fmt.Sprintf("object api stats are: %v, %v, %v, %v, %v", bucket, prefix, marker, delimiter, maxKeys))
-
 	listObjectsInfo, err := listObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
 	if err != nil {
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
-	logger.Info(fmt.Sprintf("listObjectsInfo len: %d", len(listObjectsInfo.Objects)))
 
 	for i := len(listObjectsInfo.Objects) - 1; i >= 0; i-- {
 		v := listObjectsInfo.Objects[i]
-		logger.Info(fmt.Sprintf("listObjectsInfo index: %d, object: %#+v", i, v))
-
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
 		prePath := path.Join(prefix, Sep) + Sep
-		logger.Info(fmt.Sprintf("listObjectsInfo stuff, index %d, name: %s, PrePath: %s, prefix: %s", i, name, prePath, prefix))
-
 		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {
