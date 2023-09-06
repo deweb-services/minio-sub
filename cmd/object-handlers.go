@@ -3052,6 +3052,7 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		prefix = path.Join(vars["object"], prefix)
 	}
 	logger.Info(fmt.Sprintf("object prefix is: %s", prefix))
+	logger.Info(fmt.Sprintf("object api stats are: %v, %v, %v, %v, %v", bucket, prefix, marker, delimiter, maxKeys))
 
 	// means it is a "bucket"
 	if len(strings.Split(prefix, Sep)) < 2 {
