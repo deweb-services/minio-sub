@@ -3064,7 +3064,8 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		for _, v := range listObjectsInfo.Objects {
 			name := strings.TrimPrefix(v.Name, prefix)
 			name = strings.TrimPrefix(name, Sep)
-			if !(name == "" || name == Sep) {
+			prePath := path.Join(prefix, Sep) + Sep
+			if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
 				objectsInside++
 			}
 		}
