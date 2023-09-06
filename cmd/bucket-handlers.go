@@ -305,10 +305,11 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	logger.Info(fmt.Sprintf("delete objects point: %d", 1))
 
 	for index, object := range deleteObjects.Objects {
-		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 1))
+		logger.Info(fmt.Sprintf("delete objects point: %d: 1.%d", index, 1))
 		newName := path.Join(prefix, object.ObjectName)
 		logger.Info(fmt.Sprintf("old name: %s, new name: %s, index: %d", object.ObjectName, newName, index))
 		object.ObjectName = newName
+		deleteObjects.Objects[index] = object
 	}
 
 	var objectsToDelete = map[ObjectToDelete]int{}
@@ -335,6 +336,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	dErrs := make([]DeleteError, len(deleteObjects.Objects))
 	for index, object := range deleteObjects.Objects {
 		logger.Info(fmt.Sprintf("delete objects point: %d: 3.%d", index, 0))
+		logger.Info(fmt.Sprintf("delete objects object: %d: %v, %#+v", index, object.ObjectName, object))
 
 		if apiErrCode := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object.ObjectName); apiErrCode != ErrNone {
 			logger.Info(fmt.Sprintf("delete objects api err code: %d: %v, %#+v", index, apiErrCode, errorCodes.ToAPIErr(apiErrCode)))
