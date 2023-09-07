@@ -258,12 +258,13 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 
 	for i := len(listObjectsV2Info.Objects) - 1; i >= 0; i-- {
 		v := listObjectsV2Info.Objects[i]
-		v.Name = strings.TrimPrefix(v.Name, prefix)
-		v.Name = strings.TrimPrefix(v.Name, Sep)
-		if v.Name == "" || v.Name == Sep {
+		name := strings.TrimPrefix(v.Name, prefix)
+		name = strings.TrimPrefix(name, Sep)
+		prePath := path.Join(prefix, Sep) + Sep
+		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsV2Info.Objects = append(listObjectsV2Info.Objects[:i], listObjectsV2Info.Objects[i+1:]...)
 		} else {
-			listObjectsV2Info.Objects[i] = v
+			listObjectsV2Info.Objects[i].Name = name
 		}
 	}
 	for k, v := range listObjectsV2Info.Objects {
@@ -362,7 +363,6 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	}
 
 	listObjects := objectAPI.ListObjects
-
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be
 	// marshaled into S3 compatible XML header.
@@ -371,14 +371,16 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+
 	for i := len(listObjectsInfo.Objects) - 1; i >= 0; i-- {
 		v := listObjectsInfo.Objects[i]
-		v.Name = strings.TrimPrefix(v.Name, prefix)
-		v.Name = strings.TrimPrefix(v.Name, Sep)
-		if v.Name == "" || v.Name == Sep {
+		name := strings.TrimPrefix(v.Name, prefix)
+		name = strings.TrimPrefix(name, Sep)
+		prePath := path.Join(prefix, Sep) + Sep
+		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {
-			listObjectsInfo.Objects[i] = v
+			listObjectsInfo.Objects[i].Name = name
 		}
 	}
 
