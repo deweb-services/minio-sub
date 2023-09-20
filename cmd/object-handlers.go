@@ -3000,7 +3000,6 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
-	isBucket := vars["is_bucket"] == "true"
 
 	objectAPI := api.ObjectAPI()
 	if objectAPI == nil {
@@ -3053,26 +3052,24 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		prefix = path.Join(vars["object"], prefix)
 	}
 
-	if isBucket {
-		marker = prefix
-		listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
-		if err != nil {
-			WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-			return
+	marker = prefix
+	listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+	if err != nil {
+		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	objectsInside := 0
+	for _, v := range listObjectsInfo.Objects {
+		name := strings.TrimPrefix(v.Name, prefix)
+		name = strings.TrimPrefix(name, Sep)
+		prePath := path.Join(prefix, Sep) + Sep
+		if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
+			objectsInside++
 		}
-		objectsInside := 0
-		for _, v := range listObjectsInfo.Objects {
-			name := strings.TrimPrefix(v.Name, prefix)
-			name = strings.TrimPrefix(name, Sep)
-			prePath := path.Join(prefix, Sep) + Sep
-			if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
-				objectsInside++
-			}
-		}
-		if objectsInside > 0 {
-			WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
-			return
-		}
+	}
+	if objectsInside > 0 {
+		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
+		return
 	}
 
 	replicateDel, replicateSync := checkReplicateDelete(ctx, bucket, ObjectToDelete{ObjectName: object, VersionID: opts.VersionID}, goi, gerr)

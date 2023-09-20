@@ -302,6 +302,9 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 
 	for index, object := range deleteObjects.Objects {
 		newName := path.Join(prefix, object.ObjectName)
+		if strings.HasSuffix(object.ObjectName, Sep) {
+			newName += Sep
+		}
 		object.ObjectName = newName
 		deleteObjects.Objects[index] = object
 	}
