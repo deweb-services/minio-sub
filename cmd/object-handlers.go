@@ -3041,7 +3041,7 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	}
 
 	// check contents
-	prefix, marker, delimiter, maxKeys, _, s3Error := getListObjectsV1Args(r.URL.Query())
+	prefix, _, delimiter, maxKeys, _, s3Error := getListObjectsV1Args(r.URL.Query())
 	if s3Error != ErrNone {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL, guessIsBrowserReq(r))
 		return
@@ -3052,24 +3052,8 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		prefix = path.Join(vars["object"], prefix)
 	}
 
-	marker = prefix
-	listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
-	if err != nil {
-		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-		return
-	}
-	objectsInside := 0
-	for _, v := range listObjectsInfo.Objects {
-		name := strings.TrimPrefix(v.Name, prefix)
-		name = strings.TrimPrefix(name, Sep)
-		prePath := path.Join(prefix, Sep) + Sep
-		if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
-			objectsInside++
-		}
-	}
-	if objectsInside > 0 {
+	if !api.checkObjectIsEmpty(ctx, objectAPI, bucket, prefix, prefix, delimiter, maxKeys) {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
-		return
 	}
 
 	replicateDel, replicateSync := checkReplicateDelete(ctx, bucket, ObjectToDelete{ObjectName: object, VersionID: opts.VersionID}, goi, gerr)
