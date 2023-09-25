@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
@@ -237,6 +238,27 @@ func (api ObjectAPIHandlers) ListBucketsHandler(w http.ResponseWriter, r *http.R
 	WriteSuccessResponseXML(w, encodedSuccessResponse)
 }
 
+func (api ObjectAPIHandlers) checkObjectIsEmpty(
+	ctx context.Context,
+	objectAPI ObjectLayer,
+	bucket, prefix, marker, delimiter string,
+	maxKeys int) bool {
+	listObjectsInfo, err := objectAPI.ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+	if err != nil {
+		return false
+	}
+	objectsInside := 0
+	for _, v := range listObjectsInfo.Objects {
+		name := strings.TrimPrefix(v.Name, prefix)
+		name = strings.TrimPrefix(name, Sep)
+		prePath := path.Join(prefix, Sep) + Sep
+		if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
+			objectsInside++
+		}
+	}
+	return objectsInside == 0
+}
+
 // DeleteMultipleObjectsHandler - deletes multiple objects.
 func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := NewContext(r, w, "DeleteMultipleObjects")
@@ -300,10 +322,24 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 		return
 	}
 
+	removeList := make([]int, 0)
+
 	for index, object := range deleteObjects.Objects {
+		if !api.checkObjectIsEmpty(ctx, objectAPI, bucket, prefix, prefix, Sep, 0) {
+			removeList = append(removeList, index)
+			continue
+		}
 		newName := path.Join(prefix, object.ObjectName)
+		if strings.HasSuffix(object.ObjectName, Sep) {
+			newName += Sep
+		}
 		object.ObjectName = newName
 		deleteObjects.Objects[index] = object
+	}
+
+	for i := len(removeList) - 1; i >= 0; i-- {
+		k := removeList[i]
+		deleteObjects.Objects = append(deleteObjects.Objects[:k], deleteObjects.Objects[k+1:]...)
 	}
 
 	var objectsToDelete = map[ObjectToDelete]int{}
