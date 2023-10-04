@@ -248,11 +248,12 @@ func (api ObjectAPIHandlers) checkObjectIsEmpty(
 		return false
 	}
 	objectsInside := 0
+	prePath := removeDuplicateSeps(prefix + Sep)
 	for _, v := range listObjectsInfo.Objects {
 		name := strings.TrimPrefix(v.Name, prefix)
+		name = removeDuplicateSeps(name)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := removeDuplicateSeps(prefix)
-		if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
+		if strings.HasPrefix(v.Name, prePath) && name != "" {
 			objectsInside++
 		}
 	}

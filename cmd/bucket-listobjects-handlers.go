@@ -256,15 +256,16 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		return
 	}
 
+	prePath := removeDuplicateSeps(prefix + Sep)
 	for i := len(listObjectsV2Info.Objects) - 1; i >= 0; i-- {
 		v := listObjectsV2Info.Objects[i]
 		name := strings.TrimPrefix(v.Name, prefix)
+		name = removeDuplicateSeps(name)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := removeDuplicateSeps(prefix)
-		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
+		if !strings.HasPrefix(v.Name, prePath) || name == "" {
 			listObjectsV2Info.Objects = append(listObjectsV2Info.Objects[:i], listObjectsV2Info.Objects[i+1:]...)
 		} else {
-			listObjectsV2Info.Objects[i].Name = name
+			listObjectsV2Info.Objects[i].Name = removeDuplicateSeps(name)
 		}
 	}
 	for k, v := range listObjectsV2Info.Objects {
@@ -371,16 +372,16 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		WriteErrorResponse(ctx, w, ToAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
-
+	prePath := removeDuplicateSeps(prefix + Sep)
 	for i := len(listObjectsInfo.Objects) - 1; i >= 0; i-- {
 		v := listObjectsInfo.Objects[i]
 		name := strings.TrimPrefix(v.Name, prefix)
+		name = removeDuplicateSeps(name)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := removeDuplicateSeps(prefix)
-		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
+		if !strings.HasPrefix(v.Name, prePath) || name == "" {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {
-			listObjectsInfo.Objects[i].Name = name
+			listObjectsInfo.Objects[i].Name = removeDuplicateSeps(name)
 		}
 	}
 
