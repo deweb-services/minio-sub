@@ -251,12 +251,24 @@ func (api ObjectAPIHandlers) checkObjectIsEmpty(
 	for _, v := range listObjectsInfo.Objects {
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := path.Join(prefix, Sep) + Sep
+		prePath := removeDuplicateSeps(prefix)
 		if strings.HasPrefix(v.Name, prePath) || !(name == "" || name == Sep) {
 			objectsInside++
 		}
 	}
 	return objectsInside == 0
+}
+
+func removeDuplicateSeps(s string) string {
+	b := strings.Builder{}
+	var prev rune
+	for _, v := range s {
+		if v != SepRune || (v == SepRune && prev != SepRune) {
+			_, _ = b.WriteRune(v)
+		}
+		prev = v
+	}
+	return b.String()
 }
 
 // DeleteMultipleObjectsHandler - deletes multiple objects.
@@ -329,10 +341,7 @@ func (api ObjectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 			removeList = append(removeList, index)
 			continue
 		}
-		newName := path.Join(prefix, object.ObjectName)
-		if strings.HasSuffix(object.ObjectName, Sep) {
-			newName += Sep
-		}
+		newName := removeDuplicateSeps(prefix + Sep + object.ObjectName)
 		object.ObjectName = newName
 		deleteObjects.Objects[index] = object
 	}

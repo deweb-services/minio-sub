@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 
@@ -31,7 +30,8 @@ import (
 )
 
 const (
-	Sep = "/"
+	Sep     = "/"
+	SepRune = '/'
 )
 
 func concurrentDecryptETag(ctx context.Context, objects []ObjectInfo) {
@@ -235,7 +235,7 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 	if prefix == "" {
 		prefix = vars["object"]
 	} else {
-		prefix = path.Join(vars["object"], prefix)
+		prefix = removeDuplicateSeps(vars["object"] + prefix)
 	}
 
 	// Validate the query params before beginning to serve the request.
@@ -260,7 +260,7 @@ func (api ObjectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		v := listObjectsV2Info.Objects[i]
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := path.Join(prefix, Sep) + Sep
+		prePath := removeDuplicateSeps(prefix)
 		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsV2Info.Objects = append(listObjectsV2Info.Objects[:i], listObjectsV2Info.Objects[i+1:]...)
 		} else {
@@ -353,7 +353,7 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	if prefix == "" {
 		prefix = vars["object"]
 	} else {
-		prefix = path.Join(vars["object"], prefix)
+		prefix = removeDuplicateSeps(vars["object"] + prefix)
 	}
 
 	// Validate all the query params before beginning to serve the request.
@@ -376,7 +376,7 @@ func (api ObjectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		v := listObjectsInfo.Objects[i]
 		name := strings.TrimPrefix(v.Name, prefix)
 		name = strings.TrimPrefix(name, Sep)
-		prePath := path.Join(prefix, Sep) + Sep
+		prePath := removeDuplicateSeps(prefix)
 		if !strings.HasPrefix(v.Name, prePath) || name == "" || name == Sep {
 			listObjectsInfo.Objects = append(listObjectsInfo.Objects[:i], listObjectsInfo.Objects[i+1:]...)
 		} else {

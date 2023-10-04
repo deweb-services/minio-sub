@@ -27,7 +27,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -3049,11 +3048,12 @@ func (api ObjectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	if prefix == "" {
 		prefix = vars["object"]
 	} else {
-		prefix = path.Join(vars["object"], prefix)
+		prefix = removeDuplicateSeps(vars["object"] + Sep + prefix)
 	}
 
 	if !api.checkObjectIsEmpty(ctx, objectAPI, bucket, prefix, prefix, delimiter, maxKeys) {
 		WriteErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrBucketNotEmpty), r.URL, guessIsBrowserReq(r))
+		return
 	}
 
 	replicateDel, replicateSync := checkReplicateDelete(ctx, bucket, ObjectToDelete{ObjectName: object, VersionID: opts.VersionID}, goi, gerr)
